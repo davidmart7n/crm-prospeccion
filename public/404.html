@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>CRM Pro</title>
+    <script type="text/javascript">
+      var pathSegments = window.location.pathname.split('/');
+      var repoName = pathSegments[1] || 'crm-prospeccion';
+      var redirectPath = '/' + repoName + '/';
+      if (window.location.search) {
+        redirectPath += window.location.search;
+      }
+      if (window.location.hash) {
+        redirectPath += window.location.hash;
+      }
+      window.location.replace(redirectPath);
+    </script>
+  </head>
+  <body>
+    Redirecting...
+  </body>
+</html>
