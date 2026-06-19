@@ -6,15 +6,23 @@ export function useLeads() {
   const [loading, setLoading] = useState(true)
 
   const fetchLeads = async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('leads')
       .select('*')
       .order('created_at', { ascending: false })
+    if (error) { console.error('Error fetching leads:', error.message, error.code) }
     if (!error) setLeads(data)
     setLoading(false)
   }
 
-  useEffect(() => { fetchLeads() }, []) // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') fetchLeads()
+    })
+    fetchLeads()
+    return () => subscription.unsubscribe()
+  }, [])
 
   const createLead = async (lead) => {
     const { data, error } = await supabase

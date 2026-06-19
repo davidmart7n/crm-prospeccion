@@ -6,15 +6,23 @@ export function useStages() {
   const [loading, setLoading] = useState(true)
 
   const fetchStages = async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('stages')
       .select('*')
       .order('sort_order', { ascending: true })
+    if (error) { console.error('Error fetching stages:', error.message, error.code) }
     if (!error) setStages(data)
     setLoading(false)
   }
 
-  useEffect(() => { fetchStages() }, []) // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') fetchStages()
+    })
+    fetchStages()
+    return () => subscription.unsubscribe()
+  }, []) // eslint-disable-line react-hooks/set-state-in-effect
 
   const createStage = async (stage) => {
     const maxOrder = stages.length > 0 ? Math.max(...stages.map(s => s.sort_order)) + 1 : 0

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import LeadForm from './components/leads/LeadForm'
@@ -13,30 +13,34 @@ import { useLeads } from './hooks/useLeads'
 import { useStages } from './hooks/useStages'
 import { useTags } from './hooks/useTags'
 import { useAuth } from './context/AuthContext'
+import { supabase } from './lib/supabase'
 
-export default function App() {
-  const { user, loading: authLoading } = useAuth()
+function AuthenticatedApp() {
+  const [sessionReady, setSessionReady] = useState(false)
 
-  if (authLoading) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSessionReady(true)
+      } else {
+        supabase.auth.refreshSession().then(() => {
+          setSessionReady(true)
+        })
+      }
+    })
+  }, [])
+
+  if (!sessionReady) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-bg">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-          <p className="text-sm text-text-muted">Cargando...</p>
+          <p className="text-sm text-text-muted">Cargando sesión...</p>
         </div>
       </div>
     )
   }
 
-  if (!user) {
-    return (
-      <BrowserRouter>
-        <Routes>
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
-    )
-  }
   const { leads, loading: leadsLoading, createLead, updateLead, deleteLead, moveLead } = useLeads()
   const { stages, loading: stagesLoading, createStage, updateStage, deleteStage } = useStages()
   const { tags, createTag, deleteTag } = useTags()
@@ -87,7 +91,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/crm-prospeccion">
       <Routes>
         <Route element={<Layout onNewLead={handleNewLead} leads={leads} stages={stages} />}>
           <Route
@@ -163,4 +167,31 @@ export default function App() {
       )}
     </BrowserRouter>
   )
+}
+
+export default function App() {
+  const { user, loading: authLoading } = useAuth()
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm text-text-muted">Cargando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <BrowserRouter basename="/crm-prospeccion">
+        <Routes>
+          <Route path="*" element={<Login />} />
+        </Routes>
+      </BrowserRouter>
+    )
+  }
+
+  return <AuthenticatedApp />
 }

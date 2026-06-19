@@ -6,15 +6,23 @@ export function useTags() {
   const [loading, setLoading] = useState(true)
 
   const fetchTags = async () => {
+    setLoading(true)
     const { data, error } = await supabase
       .from('tags')
       .select('*')
       .order('name', { ascending: true })
+    if (error) { console.error('Error fetching tags:', error.message, error.code) }
     if (!error) setTags(data)
     setLoading(false)
   }
 
-  useEffect(() => { fetchTags() }, []) // eslint-disable-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') fetchTags()
+    })
+    fetchTags()
+    return () => subscription.unsubscribe()
+  }, [])
 
   const createTag = async (tag) => {
     const { data, error } = await supabase
